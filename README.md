@@ -183,7 +183,7 @@ Configured in `.env` (gitignored). Node 22 loads it natively, no `dotenv` depend
 
 ```bash
 ICA_API_KEY=<paste your key>
-ICA_BASE_URL=https://api.nextgen-beta.ica.ibm.com/ica/v1/chat-models
+ICA_BASE_URL=https://<your-ica-host>/ica/v1/chat-models
 ICA_MODEL=claude-sonnet-5
 GLASSBOX_LLM=off          # off | record | replay
 ```
