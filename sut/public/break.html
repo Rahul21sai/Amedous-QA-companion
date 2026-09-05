@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Break the App — GlassBox QA</title>
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body { background: #14161b; color: #e8eaee; }
+    .wrap { max-width: 720px; }
+    h1 { color: #fff; }
+    .mut { background: #1c1f26; border: 1px solid #2b2f39; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; }
+    .mut h3 { margin: 0 0 4px; font-size: 15px; color: #fff; }
+    .mut p { margin: 0 0 12px; color: #99a0ad; font-size: 13px; }
+    .mut code { background: #262a33; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+    .go { background: #d9484c; color: #fff; border: 0; padding: 8px 15px; border-radius: 7px; font: inherit; font-weight: 550; cursor: pointer; }
+    .go:hover { background: #c33d41; }
+    .go--calm { background: #2b6fd6; }
+    .go--calm:hover { background: #245fba; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    .row input { background: #262a33; border: 1px solid #333844; color: #e8eaee; padding: 9px 11px; border-radius: 7px; font: inherit; }
+    .out { margin-top: 18px; padding: 12px 14px; background: #12241a; border: 1px solid #1f4430; border-radius: 8px; color: #7fd6a0; font-size: 13px; white-space: pre-wrap; min-height: 20px; }
+    .out.err { background: #2a1416; border-color: #4d2226; color: #ef9b9e; }
+    .hdr-note { color: #99a0ad; font-size: 13px; margin-bottom: 24px; }
+    .hdr-note b { color: #e8eaee; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Break the App</h1>
+    <p class="hdr-note">
+      Every button here <b>physically edits a source file and makes a real git commit</b>.
+      Nothing is a query flag. That is why <code>git diff</code> is real — and why you can
+      type your own text below instead of using ours.
+    </p>
+
+    <div class="mut">
+      <h3>Rename the checkout CTA &mdash; type anything</h3>
+      <p>Renames the <code>Place Order</code> button to whatever you type. Expect: the test breaks, then <b>heals</b>, with the score arithmetic shown.</p>
+      <form class="row" data-mutation="rename-cta">
+        <input name="label" placeholder="e.g. Complete Purchase" autocomplete="off">
+        <button class="go" type="submit">Rename &amp; commit</button>
+      </form>
+    </div>
+
+    <div class="mut">
+      <h3>Turn the cart link into a button</h3>
+      <p><code>&lt;a class="nav-cart"&gt;</code> becomes <code>&lt;button&gt;</code>. <b>Pixel-identical</b> — every screenshot-diff tool is blind to this, and it breaks every <code>getByRole('link')</code> call.</p>
+      <form class="row" data-mutation="link-to-button"><span></span><button class="go" type="submit">Swap the role</button></form>
+    </div>
+
+    <div class="mut">
+      <h3>Add a decoy button</h3>
+      <p>Adds a second <code>Place Order Later</code> button. Two candidates land within the margin, so the healer must <b>escalate rather than guess</b>.</p>
+      <form class="row" data-mutation="decoy-button"><span></span><button class="go" type="submit">Add the decoy</button></form>
+    </div>
+
+    <div class="mut">
+      <h3>Break the order total (a real product bug)</h3>
+      <p>Drops the tax term from <code>calcTotal()</code>. Every locator still resolves; only an assertion fails. Expect: the healer <b>refuses</b> and the release is <b>blocked</b>.</p>
+      <form class="row" data-mutation="break-total"><span></span><button class="go" type="submit">Introduce the bug</button></form>
+    </div>
+
+    <div class="mut">
+      <h3>Remove the failed-login audit log</h3>
+      <p>Deletes the audit write on the failed-login path &rarr; OWASP <code>A09:2025</code> Security Logging Failures.</p>
+      <form class="row" data-mutation="drop-audit-log"><span></span><button class="go" type="submit">Remove logging</button></form>
+    </div>
+
+    <div class="mut">
+      <h3>Reset everything</h3>
+      <p>Reverts the app to its committed baseline (<code>git checkout -- sut/</code>).</p>
+      <form class="row" data-mutation="reset"><span></span><button class="go go--calm" type="submit">Reset to baseline</button></form>
+    </div>
+
+    <div class="out" id="out">Ready.</div>
+  </main>
+
+  <script>
+    var out = document.getElementById('out')
+    document.querySelectorAll('form[data-mutation]').forEach(function (f) {
+      f.addEventListener('submit', function (e) {
+        e.preventDefault()
+        var mutation = f.getAttribute('data-mutation')
+        var input = f.querySelector('input[name=label]')
+        out.className = 'out'
+        out.textContent = 'Applying ' + mutation + '...'
+        fetch('/break/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mutation: mutation, label: input ? input.value : '' }),
+        })
+          .then(function (r) { return r.json() })
+          .then(function (j) {
+            out.className = j.ok ? 'out' : 'out err'
+            out.textContent = j.ok ? j.output : j.error
+          })
+          .catch(function (err) { out.className = 'out err'; out.textContent = String(err) })
+      })
+    })
+  </script>
+</body>
+</html>

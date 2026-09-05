@@ -1,0 +1,6 @@
+node_modules/
+.glassbox/
+artifacts/
+*.log
+.env
+.env.local

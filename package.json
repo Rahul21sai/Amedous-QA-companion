@@ -1,0 +1,28 @@
+{
+  "name": "glassbox-qa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GlassBox QA — self-healing tests that refuse to lie. Autonomous Quality Engineering for the AI Development Era.",
+  "main": "engine/run.js",
+  "scripts": {
+    "sut": "node sut/server.js",
+    "engine": "node engine/server.js",
+    "demo": "concurrently -n SUT,ENGINE -c cyan,magenta \"npm:sut\" \"npm:engine\"",
+    "baseline": "node engine/run.js --baseline",
+    "run": "node engine/run.js",
+    "probe": "node scripts/probe-heal.js",
+    "mutate": "node scripts/mutate.js",
+    "reset": "node scripts/mutate.js reset",
+    "test": "node --test engine/"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "axe-core": "4.13.0",
+    "concurrently": "10.0.5",
+    "express": "5.2.1",
+    "fastest-levenshtein": "1.0.16",
+    "playwright": "1.63.0",
+    "semver": "7.8.5",
+    "ws": "8.21.3"
+  }
+}

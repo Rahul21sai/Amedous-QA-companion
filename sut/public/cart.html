@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cart — Aperture Store</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="/">Aperture Store</a>
+    <nav class="nav" aria-label="Main">
+      <a class="nav-link" href="/">Shop</a>
+      <a class="nav-cart" id="cart-link" href="/cart">Cart ({{COUNT}})</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <h1>Your Cart</h1>
+    <table class="lines" aria-label="Cart lines">
+      <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
+      <tbody>
+{{LINES}}
+      </tbody>
+    </table>
+    <div class="actions">
+      <a class="btn btn--ghost" id="keep-shopping" href="/">Keep Shopping</a>
+      <a class="btn btn--primary" id="to-checkout" href="/checkout">Proceed to Checkout</a>
+    </div>
+  </main>
+
+  <script src="/vendor/jquery.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
