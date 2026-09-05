@@ -1,43 +1,160 @@
 /**
- * LLM — optional by design.
+ * LLM — optional by design, and provider-agnostic.
  *
- * Configure an OpenAI-compatible endpoint (IBM ICA works this way):
- *   GLASSBOX_LLM_URL=https://.../v1/chat/completions
- *   GLASSBOX_LLM_KEY=...
- *   GLASSBOX_LLM_MODEL=...
- *   GLASSBOX_LLM=record|replay|off
+ * Configured from .env (loaded via Node 22's built-in process.loadEnvFile).
+ * IBM ICA is the primary target; any OpenAI-compatible endpoint also works.
  *
- * Three modes, and the mode is shown on screen as a badge so this is honest rather than
+ * THREE MODES, and the mode is shown on screen as a badge so this is honest rather than
  * deceptive:
+ *   off     no model at all; deterministic template prose from the typed change records
  *   record  call live, cache the response to disk
- *   replay  serve only from cache — zero network, zero latency, zero variance. USE THIS
- *           ON STAGE. Four separate vendors (Applitools, Meticulous, Antithesis,
- *           Functionize) built entire market positions on determinism.
- *   off     no model at all; deterministic template prose from the typed records.
+ *   replay  serve ONLY from cache — zero network, zero latency, zero variance. USE ON STAGE.
  *
- * `off` is the default when no endpoint is configured, and it is a FULLY WORKING path —
- * not a degraded one. An ICA endpoint almost certainly needs the corporate network, which
- * hackathon wifi will not have, so the demo must never depend on a network call.
+ * `off` is the default when no key is configured, and it is a FULLY WORKING path, not a
+ * degraded one. An ICA endpoint will almost certainly need the corporate network, which
+ * hackathon wifi will not have, so nothing in the demo may depend on a network call.
  *
- * TOKEN DISCIPLINE: we never send raw DOM or HTML. Only the typed change records and the
- * top-5 candidate summaries. A single SPA page is 500KB–2MB of HTML; that is how you blow
- * a context window at hour three.
+ * WIRE FORMAT. ICA's `/ica/v1/chat-models` is NOT the OpenAI `/v1/chat/completions` shape,
+ * and its exact contract is deployment-specific. Rather than hardcode a guess, the request
+ * and response mapping lives in SHAPES below, `scripts/llm-probe.js` discovers empirically
+ * which one the endpoint actually speaks, and the answer is cached to
+ * .glassbox/llm-shape.json. Same philosophy as the rest of this codebase: verify, don't
+ * assume.
+ *
+ * TOKEN DISCIPLINE: raw DOM and HTML are never sent — only the 5–30 typed change records or
+ * the top-5 candidate summaries. A single modern page is 500KB–2MB of HTML.
  */
 
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
 
-const CACHE = path.join(__dirname, '..', '.glassbox', 'llm-cache')
+const ROOT = path.join(__dirname, '..')
+const CACHE = path.join(ROOT, '.glassbox', 'llm-cache')
+const SHAPE_FILE = path.join(ROOT, '.glassbox', 'llm-shape.json')
 
-const URL_ = process.env.GLASSBOX_LLM_URL || ''
-const KEY = process.env.GLASSBOX_LLM_KEY || ''
-const MODEL = process.env.GLASSBOX_LLM_MODEL || 'gpt-4o-mini'
+// Node 22 ships this — no dotenv dependency.
+try { process.loadEnvFile(path.join(ROOT, '.env')) } catch { /* no .env, fine */ }
 
+// ---------------------------------------------------------------------------
+// config
+// ---------------------------------------------------------------------------
+function config() {
+  const icaKey = (process.env.ICA_API_KEY || '').trim()
+  const icaBase = (process.env.ICA_BASE_URL || '').trim().replace(/\/+$/, '')
+  const genericKey = (process.env.GLASSBOX_LLM_KEY || '').trim()
+  const genericBase = (process.env.GLASSBOX_LLM_URL || '').trim().replace(/\/+$/, '')
+
+  // Provider is chosen by which BASE URL is present, not by whether a key exists.
+  // Gating on the key too would hide the endpoint whenever the key is blank, which is
+  // exactly the state you are in when you most need to probe reachability.
+  const useIca = !!icaBase
+  return {
+    provider: useIca ? 'ica' : genericBase ? 'openai-compatible' : null,
+    base: useIca ? icaBase : genericBase,
+    key: useIca ? icaKey : genericKey,
+    model: (useIca ? process.env.ICA_MODEL : process.env.GLASSBOX_LLM_MODEL) || 'claude-sonnet-5',
+    integrationId: (process.env.ICA_INTEGRATION_ID || '').trim(),
+    extensionName: (process.env.ICA_EXTENSION_NAME || '').trim(),
+    shape: (process.env.GLASSBOX_LLM_SHAPE || '').trim() || discoveredShape(),
+  }
+}
+
+function discoveredShape() {
+  try { return JSON.parse(fs.readFileSync(SHAPE_FILE, 'utf8')).shape || null } catch { return null }
+}
+
+function saveShape(shape, detail) {
+  fs.mkdirSync(path.dirname(SHAPE_FILE), { recursive: true })
+  fs.writeFileSync(SHAPE_FILE, JSON.stringify({ shape, detail }, null, 1))
+}
+
+/**
+ * Candidate wire formats. Each knows how to build a request and how to pull text out of
+ * a response. Adding a variant is a few lines here and nothing else changes.
+ */
+const SHAPES = {
+  openai: {
+    url: (c) => `${c.base}/chat/completions`,
+    body: (c, system, user) => ({
+      model: c.model, temperature: 0, max_tokens: 400,
+      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+    }),
+    text: (j) => j?.choices?.[0]?.message?.content,
+  },
+  'ica-query': {
+    url: (c) => `${c.base}/${encodeURIComponent(c.model)}/completion`,
+    body: (_c, system, user) => ({ query: user, system_prompt: system, parameters: { temperature: 0 } }),
+    text: (j) => j?.response ?? j?.generated_text ?? j?.result ?? j?.output ?? j?.answer,
+  },
+  'ica-messages': {
+    url: (c) => `${c.base}/${encodeURIComponent(c.model)}/completion`,
+    body: (c, system, user) => ({
+      model: c.model, temperature: 0,
+      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+    }),
+    text: (j) =>
+      j?.choices?.[0]?.message?.content ?? j?.response ?? j?.generated_text ?? j?.result ?? j?.output,
+  },
+  'ica-invoke': {
+    url: (c) => `${c.base}/${encodeURIComponent(c.model)}/invoke`,
+    body: (_c, system, user) => ({ query: `${system}\n\n${user}` }),
+    text: (j) => j?.response ?? j?.generated_text ?? j?.result ?? j?.output ?? j?.answer,
+  },
+}
+
+const SHAPE_NAMES = Object.keys(SHAPES)
+
+/**
+ * Auth headers.
+ *
+ * The ICA beta endpoint rejects with a GENERIC `{"error":"Invalid icaKey"}` for every
+ * header variant — including sending no auth header at all — so the header it actually
+ * reads cannot be identified from outside without a valid key. (Probed: Authorization
+ * Bearer, bare Authorization, icaKey, Integration-Id, api-key, x-api-key. All identical.)
+ *
+ * So we send the key in every plausible header at once. HTTP servers ignore headers they
+ * do not recognise, so this costs nothing and removes the guess entirely — whichever one
+ * ICA reads is satisfied. If a stricter deployment ever objects, `npm run llm:probe`
+ * surfaces it immediately.
+ */
+function headers(c) {
+  const h = { 'Content-Type': 'application/json', Accept: 'application/json' }
+  if (c.key) {
+    h.Authorization = `Bearer ${c.key}`
+    h.icaKey = c.key
+    h['api-key'] = c.key
+    h['x-api-key'] = c.key
+  }
+  if (c.integrationId) h['Integration-Id'] = c.integrationId
+  if (c.extensionName) h['Extension-Name'] = c.extensionName
+  return h
+}
+
+// ---------------------------------------------------------------------------
+// mode
+// ---------------------------------------------------------------------------
 function mode() {
-  const m = (process.env.GLASSBOX_LLM || '').toLowerCase()
-  if (m === 'record' || m === 'replay' || m === 'off') return m
-  return URL_ && KEY ? 'replay' : 'off'
+  const explicit = (process.env.GLASSBOX_LLM || '').toLowerCase()
+  const c = config()
+  if (explicit === 'off') return 'off'
+  if (explicit === 'record' || explicit === 'replay') {
+    // Asking for a live mode without a usable endpoint is a config error, not a silent
+    // fallback — say so once, then behave as `off` so the run still completes.
+    if (explicit === 'record' && !(c.provider && c.key)) return 'off'
+    return explicit
+  }
+  return c.provider && c.key ? 'replay' : 'off'
+}
+
+/** Why the model is not being used, for the on-screen badge. */
+function status() {
+  const c = config()
+  const m = mode()
+  if (m !== 'off') return { mode: m, provider: c.provider, model: c.model, shape: c.shape || '(undetected)' }
+  if (!c.base) return { mode: 'off', reason: 'no endpoint configured' }
+  if (!c.key) return { mode: 'off', reason: 'ICA_API_KEY is empty' }
+  return { mode: 'off', reason: 'explicitly disabled' }
 }
 
 const hash = (s) => crypto.createHash('sha256').update(s).digest('hex').slice(0, 16)
@@ -46,55 +163,74 @@ function cached(key) {
   const f = path.join(CACHE, key + '.json')
   return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null
 }
-
 function store(key, value) {
   fs.mkdirSync(CACHE, { recursive: true })
   fs.writeFileSync(path.join(CACHE, key + '.json'), JSON.stringify(value, null, 1))
 }
 
-/** One small JSON-mode call. Returns null on any failure — callers must have a fallback. */
-async function ask(prompt, { maxTokens = 300 } = {}) {
+const SYSTEM = 'You are a QA engineer. Reply with strict JSON only, no prose outside the JSON.'
+
+/** One raw call. Returns { ok, text, status, error } — never throws. */
+async function callRaw(c, shapeName, system, user, timeoutMs = 20000) {
+  const shape = SHAPES[shapeName]
+  if (!shape) return { ok: false, error: `unknown shape ${shapeName}` }
+  const url = shape.url(c)
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: headers(c),
+      body: JSON.stringify(shape.body(c, system, user)),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    const raw = await res.text()
+    let json = null
+    try { json = JSON.parse(raw) } catch {}
+    if (!res.ok) return { ok: false, status: res.status, url, error: raw.slice(0, 400), json }
+    const text = json ? shape.text(json) : raw
+    if (!text) return { ok: false, status: res.status, url, error: 'no text field found in response', json, raw: raw.slice(0, 400) }
+    return { ok: true, status: res.status, url, text: String(text), json }
+  } catch (e) {
+    return { ok: false, url, error: e.name === 'TimeoutError' ? `timed out after ${timeoutMs}ms` : e.message }
+  }
+}
+
+/**
+ * Ask for JSON. Returns the parsed object, or null — and every caller has a
+ * deterministic fallback, so null is never fatal.
+ */
+async function ask(prompt, { maxTokens } = {}) {
   const m = mode()
-  const key = hash(MODEL + '|' + prompt)
+  const c = config()
+  const key = hash(`${c.model}|${c.shape || 'auto'}|${prompt}`)
 
   if (m === 'off') return null
   const hit = cached(key)
   if (hit) return hit
-  if (m === 'replay') return null // replay never reaches the network
+  if (m === 'replay') return null // replay never touches the network
+
+  const shapeName = c.shape || 'openai'
+  const r = await callRaw(c, shapeName, SYSTEM, prompt)
+  if (!r.ok) return null
 
   try {
-    const res = await fetch(URL_, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}` },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0,
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: 'You are a QA engineer. Reply with strict JSON only, no prose outside the JSON.' },
-          { role: 'user', content: prompt },
-        ],
-      }),
-      signal: AbortSignal.timeout(15000),
-    })
-    if (!res.ok) return null
-    const body = await res.json()
-    const text = body?.choices?.[0]?.message?.content
-    if (!text) return null
-    const parsed = JSON.parse(text.replace(/^```(?:json)?|```$/g, '').trim())
+    const parsed = JSON.parse(String(r.text).replace(/^```(?:json)?/i, '').replace(/```$/, '').trim())
     store(key, parsed)
     return parsed
   } catch {
-    return null // network, timeout, auth, malformed JSON — all fall through to templates
+    return null
   }
 }
+
+// ---------------------------------------------------------------------------
+// the three call sites
+// ---------------------------------------------------------------------------
 
 /**
  * Re-rank the top-5 candidates and justify the pick in one sentence.
  *
  * The model NEVER writes a selector. It may only choose among candidates our deterministic
- * scorer already produced, and if it disagrees with the scorer we keep the scorer's answer
- * and record the disagreement. The arithmetic stays authoritative.
+ * scorer already produced, and if it disagrees we KEEP the scorer's answer and record the
+ * disagreement. The arithmetic stays authoritative.
  */
 async function rerank(fingerprint, decision) {
   if (!decision || !decision.best) return { justification: null, provenance: 'COMPUTED' }
@@ -172,4 +308,4 @@ async function summarize(result) {
   return out && out.summary ? { text: out.summary, provenance: 'LLM PROSE' } : template()
 }
 
-module.exports = { mode, rerank, summarize, ask }
+module.exports = { mode, status, config, rerank, summarize, ask, callRaw, SHAPES, SHAPE_NAMES, saveShape, SHAPE_FILE }

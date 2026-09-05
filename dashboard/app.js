@@ -313,8 +313,12 @@ function connect() {
         renderVerdict(r.verdict, r.roi, (r.verdict && r.verdict.thresholds) || thresholds)
         const rerun = r.specs.filter((s) => s.healedOnRerun).length
         $('f-rerun').textContent = rerun ? `${rerun} rescued` : '—'
-        $('llm-mode').textContent = `LLM: ${r.llmMode}`
+        // Show WHY the model is off, not just that it is. A badge reading "off" invites
+        // "is the AI part even real?"; one reading "off — ICA_API_KEY is empty" answers it.
+        const s = r.llmStatus || {}
+        $('llm-mode').textContent = s.reason ? `LLM: ${r.llmMode} — ${s.reason}` : `LLM: ${r.llmMode} (${s.model || ''} via ${s.shape || '?'})`
         $('llm-mode').className = 'badge badge--llm'
+        $('llm-mode').title = JSON.stringify(s)
         if (r.insight) {
           $('insight').textContent = r.insight.text
           $('insight-badge').textContent = r.insight.provenance

@@ -177,15 +177,43 @@ Two numbers, and the assumption travels with the one that needs it:
 
 Flake claim: *"we ran the healed suite 5 times and it passed 5 times"* — verified, 5/5, ~9s per run. Not "zero flakes".
 
-## LLM (optional by design)
+## LLM (optional by design) — IBM ICA
+
+Configured in `.env` (gitignored). Node 22 loads it natively, no `dotenv` dependency.
 
 ```bash
-GLASSBOX_LLM_URL=... GLASSBOX_LLM_KEY=... GLASSBOX_LLM_MODEL=... GLASSBOX_LLM=replay npm run run
+ICA_API_KEY=<paste your key>
+ICA_BASE_URL=https://api.nextgen-beta.ica.ibm.com/ica/v1/chat-models
+ICA_MODEL=claude-sonnet-5
+GLASSBOX_LLM=off          # off | record | replay
 ```
 
-`record` calls live and caches; **`replay` serves only from cache** — zero network, zero latency, zero variance; `off` uses deterministic template prose. Default is `off` when no endpoint is set, and `off` is a **fully working path**, not a degraded one. The mode is shown on screen as a badge.
+```bash
+npm run llm:probe         # verify the endpoint and detect its wire format
+```
 
-The model never writes a selector. It may only re-rank candidates the deterministic scorer already produced, and if it disagrees the scorer's answer is kept and the disagreement recorded. Raw DOM is never sent — only typed change records.
+**Modes.** `record` calls live and caches every response; **`replay` serves only from cache** — zero network, zero latency, zero variance, which is what you want on stage; `off` uses deterministic template prose. Default is `off`, and **`off` is a fully working path, not a degraded one** — an ICA endpoint needs the corporate network, which conference wifi will not have, so nothing in the demo may depend on a network call.
+
+The badge on screen says not just the mode but the **reason** — e.g. `LLM: off — ICA_API_KEY is empty`. A badge reading only "off" invites *"is the AI part even real?"*; one that names the cause answers it.
+
+### What the probe established about this endpoint
+
+`/ica/v1/chat-models` is **not** the OpenAI `/v1/chat/completions` path, so rather than guess, `scripts/llm-probe.js` tests candidate shapes against the live endpoint. Findings:
+
+| Route | Status | Meaning |
+|---|---|---|
+| `…/definitely-not-a-real-route-xyz` | 404 `{"detail":"Not Found"}` | **control** |
+| `…/chat/completions` | 400 `{"error":"Invalid icaKey"}` | **exists** — reached auth |
+| `…/models` | 400 `{"error":"Invalid icaKey"}` | exists |
+| `…/completion`, `…/{model}/completion`, `…/{model}/invoke` | 404 | do not exist |
+
+A 400 rather than a 404 means the route resolved and only the credential was rejected. So **this deployment is OpenAI-compatible**: `POST {base}/chat/completions` with `{messages:[...]}`. That's pinned as `GLASSBOX_LLM_SHAPE=openai`.
+
+The auth header could **not** be identified from outside: `Authorization: Bearer`, bare `Authorization`, `icaKey`, `Integration-Id`, `api-key`, `x-api-key` and *sending no header at all* all return the identical generic `Invalid icaKey`. So the client sends the key in every plausible header at once — servers ignore headers they don't recognise, which removes the guess at no cost.
+
+### The model's authority is deliberately narrow
+
+It **never writes a selector**. It may only re-rank candidates the deterministic scorer already produced, and if it disagrees, **the scorer's answer is kept** and the disagreement recorded. Raw DOM is never sent — only the 5–30 typed change records. Every figure on screen is badged `COMPUTED` or `LLM PROSE`.
 
 ## Layout
 

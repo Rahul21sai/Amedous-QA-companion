@@ -11,6 +11,7 @@
     "baseline": "node engine/run.js --baseline",
     "run": "node engine/run.js",
     "probe": "node scripts/probe-heal.js",
+    "llm:probe": "node scripts/llm-probe.js",
     "mutate": "node scripts/mutate.js",
     "reset": "node scripts/mutate.js reset",
     "test": "node --test engine/score.test.js"

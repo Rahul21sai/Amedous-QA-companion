@@ -117,7 +117,7 @@ async function main() {
     startedAt: new Date().toISOString(),
     changeRecords: [], impacted: [], selection: null,
     specs: [], heals: [], findings: { security: [], a11y: [], perf: null },
-    verdict: null, roi: null, llmMode: llm.mode(),
+    verdict: null, roi: null, llmMode: llm.mode(), llmStatus: llm.status(),
   }
 
   try {
