@@ -75,7 +75,7 @@ app.get('/', (req, res) => {
         <p class="card__price">${pricing.fmt(p.priceCents)}</p>
         <form method="post" action="/cart/add">
           <input type="hidden" name="id" value="${p.id}">
-          <button class="btn btn--primary" id="add-${p.id}" type="submit">Add to Cart</button>
+          <button class="btn btn--primary" id="add-${p.id}" type="submit" aria-label="Add ${esc(p.name)} to Cart">Add to Cart</button>
         </form>
       </li>`
     )
@@ -117,6 +117,7 @@ app.get('/checkout', (req, res) => {
     render('checkout.html', {
       COUNT: s.cart.length,
       SUBTOTAL: pricing.fmt(sub),
+      DISCOUNT: pricing.fmt(0),
       TAX: pricing.fmt(pricing.calcTax(sub)),
       TOTAL: pricing.fmt(pricing.calcTotal(items, null)),
       PROMO_ERROR: '',
@@ -141,6 +142,7 @@ app.post('/checkout/promo', (req, res) => {
     render('checkout.html', {
       COUNT: s.cart.length,
       SUBTOTAL: pricing.fmt(sub),
+      DISCOUNT: pricing.fmt(discount),
       TAX: pricing.fmt(pricing.calcTax(sub - discount)),
       TOTAL: pricing.fmt(pricing.calcTotal(items, code)),
       PROMO_ERROR: message,

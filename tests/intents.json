@@ -1,0 +1,21 @@
+{
+  "_doc": [
+    "ACCEPTANCE CRITERIA — the business intent side of traceability.",
+    "",
+    "Each spec in specs.js declares the `ac` it covers, so the matrix reads",
+    "intent -> acceptance criterion -> test -> evidence -> verdict.",
+    "",
+    "AC-6 deliberately has NO covering test. That is a real coverage gap, and the gate",
+    "reports it rather than hiding it: an acceptance criterion with no test is the honest",
+    "definition of missing coverage, and it is what stops generated test suites from",
+    "padding themselves with rows that trace to nothing."
+  ],
+  "criteria": [
+    { "id": "AC-1", "text": "A shopper can navigate to their cart from any page." },
+    { "id": "AC-2", "text": "Adding a product places it in the cart." },
+    { "id": "AC-3", "text": "The order total must equal subtotal minus discount plus tax." },
+    { "id": "AC-4", "text": "The promo code SAVE10 reduces the subtotal by 10%." },
+    { "id": "AC-5", "text": "Accepting the terms and submitting places the order." },
+    { "id": "AC-6", "text": "A shopper can remove a single line item from the cart." }
+  ]
+}

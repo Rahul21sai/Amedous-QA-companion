@@ -1,0 +1,70 @@
+{
+  "_doc": [
+    "THE RELEASE POLICY. Readable, version-controlled, reviewable in a PR.",
+    "No human decides the verdict on stage and no model does either — this file does.",
+    "",
+    "Thresholds are deliberately visible. Healenium ships a score-cap of 0.6 and hides it;",
+    "a threshold you cannot see is a threshold you cannot audit.",
+    "",
+    "autoHeal is 0.85 rather than 0.90 on measured evidence: a complete relabel of a control",
+    "whose role, tag, id, class, container and neighbours all still match scores ~0.88,",
+    "because the accessible name genuinely changed by ~76%. 0.90 would refuse a heal that is",
+    "provably correct. Below 0.85 you are guessing."
+  ],
+
+  "thresholds": {
+    "autoHeal": 0.85,
+    "minimum": 0.6,
+    "margin": 0.15
+  },
+
+  "roi": {
+    "minutesPerManualFix": 12,
+    "assumptionNote": "12 min/fix is an ASSUMPTION, shown next to any number derived from it. The touched-files ratio below needs no assumption at all."
+  },
+
+  "rules": [
+    {
+      "id": "G1",
+      "when": "productBugs > 0",
+      "verdict": "BLOCK",
+      "reason": "A real product defect was found. The suite is not permitted to go green by adjusting the test."
+    },
+    {
+      "id": "G2",
+      "when": "ambiguousHeals > 0",
+      "verdict": "WARN",
+      "reason": "A locator had two plausible candidates within the margin. Applying one would risk a permanently-green test asserting nothing, so it was escalated."
+    },
+    {
+      "id": "G3",
+      "when": "failedAfterHeal > 0",
+      "verdict": "BLOCK",
+      "reason": "A test was still failing after healing was applied and re-run."
+    },
+    {
+      "id": "G4",
+      "when": "securityFindings.newCritical > 0",
+      "verdict": "BLOCK",
+      "reason": "A NEW critical security finding appeared that was not in the accepted baseline."
+    },
+    {
+      "id": "G4b",
+      "when": "securityFindings.knownCritical > 0",
+      "verdict": "WARN",
+      "reason": "Known critical security debt is still open. Tracked against the baseline, not blocking this release."
+    },
+    {
+      "id": "G5",
+      "when": "a11yViolations.newCritical > 0",
+      "verdict": "WARN",
+      "reason": "New critical accessibility violations were detected by axe-core."
+    },
+    {
+      "id": "G6",
+      "when": "unmappedAcceptanceCriteria > 0",
+      "verdict": "WARN",
+      "reason": "An acceptance criterion has no covering test. Generated coverage must trace to a requirement or it is padding."
+    }
+  ]
+}

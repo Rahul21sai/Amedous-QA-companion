@@ -1,0 +1,708 @@
+{
+  "_doc": [
+    "THE LOCATOR REGISTRY — specs name keys, never selectors.",
+    "",
+    "Two kinds of entry, and the distinction is the non-masking guarantee:",
+    "  kind:'role'  ACTION targets. Healable. Resolved via getByRole, so a heal is a",
+    "               change to `primary` here and nothing else.",
+    "  kind:'css'   ASSERTION targets (totals, amounts). NOT healable, by construction.",
+    "               An assertion target must never be rewritten to make a test pass —",
+    "               that is how a self-healing suite hides a real bug.",
+    "",
+    "`fingerprint` is written on the last GREEN run. Self-healing has a cold-start:",
+    "with no recorded fingerprint there is nothing to score against, so the baseline",
+    "run is mandatory before any mutation."
+  ],
+  "nav.shop": {
+    "kind": "role",
+    "primary": {
+      "role": "link",
+      "name": "Shop",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f2e5",
+      "role": "link",
+      "name": "Shop",
+      "text": null,
+      "url": "/",
+      "placeholder": null,
+      "cursor": "pointer",
+      "box": {
+        "x": 1234,
+        "y": 16,
+        "width": 35,
+        "height": 23
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "banner",
+        "navigation"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Main"
+      ],
+      "region": "Main",
+      "siblingIndex": 0,
+      "neighborTexts": [
+        "Cart (1)"
+      ],
+      "interactive": true,
+      "tag": "a",
+      "id": "",
+      "cls": "nav-link",
+      "attrs": {
+        "class": "nav-link",
+        "href": "/"
+      }
+    }
+  },
+  "nav.cart": {
+    "kind": "role",
+    "primary": {
+      "role": "link",
+      "name": "Cart",
+      "exact": false
+    },
+    "fingerprint": {
+      "ref": "f2e6",
+      "role": "link",
+      "name": "Cart (1)",
+      "text": null,
+      "url": "/cart",
+      "placeholder": null,
+      "cursor": "pointer",
+      "box": {
+        "x": 1289,
+        "y": 16,
+        "width": 49,
+        "height": 23
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "banner",
+        "navigation"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Main"
+      ],
+      "region": "Main",
+      "siblingIndex": 1,
+      "neighborTexts": [
+        "Shop"
+      ],
+      "interactive": true,
+      "tag": "a",
+      "id": "cart-link",
+      "cls": "nav-cart",
+      "attrs": {
+        "class": "nav-cart",
+        "id": "cart-link",
+        "href": "/cart"
+      }
+    }
+  },
+  "shop.addLens": {
+    "kind": "role",
+    "primary": {
+      "role": "button",
+      "name": "Add Aperture 35mm Lens to Cart",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f2e15",
+      "role": "button",
+      "name": "Add Aperture 35mm Lens to Cart",
+      "text": "Add to Cart",
+      "url": null,
+      "placeholder": null,
+      "cursor": "pointer",
+      "box": {
+        "x": 340,
+        "y": 266,
+        "width": 113,
+        "height": 43
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "list",
+        "listitem"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Products",
+        ""
+      ],
+      "region": "Products",
+      "siblingIndex": 3,
+      "neighborTexts": [
+        "Aperture 35mm Lens",
+        "Fast prime, weather sealed.",
+        "$249.00"
+      ],
+      "interactive": true,
+      "tag": "button",
+      "id": "add-p1",
+      "cls": "btn btn--primary",
+      "attrs": {
+        "class": "btn btn--primary",
+        "id": "add-p1",
+        "type": "submit",
+        "aria-label": "Add Aperture 35mm Lens to Cart"
+      }
+    }
+  },
+  "shop.addTripod": {
+    "kind": "role",
+    "primary": {
+      "role": "button",
+      "name": "Add Tripod Carbon Mk II to Cart",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f2e21",
+      "role": "button",
+      "name": "Add Tripod Carbon Mk II to Cart",
+      "text": "Add to Cart",
+      "url": null,
+      "placeholder": null,
+      "cursor": "pointer",
+      "box": {
+        "x": 587,
+        "y": 266,
+        "width": 113,
+        "height": 43
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "list",
+        "listitem"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Products",
+        ""
+      ],
+      "region": "Products",
+      "siblingIndex": 3,
+      "neighborTexts": [
+        "Tripod Carbon Mk II",
+        "Three-section carbon legs.",
+        "$129.00"
+      ],
+      "interactive": true,
+      "tag": "button",
+      "id": "add-p2",
+      "cls": "btn btn--primary",
+      "attrs": {
+        "class": "btn btn--primary",
+        "id": "add-p2",
+        "type": "submit",
+        "aria-label": "Add Tripod Carbon Mk II to Cart"
+      }
+    }
+  },
+  "cart.keepShopping": {
+    "kind": "role",
+    "primary": {
+      "role": "link",
+      "name": "Keep Shopping",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f3e21",
+      "role": "link",
+      "name": "Keep Shopping",
+      "text": null,
+      "url": "/",
+      "placeholder": null,
+      "cursor": "pointer",
+      "box": {
+        "x": 321,
+        "y": 253,
+        "width": 138,
+        "height": 43
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "generic"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        ""
+      ],
+      "region": null,
+      "siblingIndex": 0,
+      "neighborTexts": [
+        "Proceed to Checkout"
+      ],
+      "interactive": true,
+      "tag": "a",
+      "id": "keep-shopping",
+      "cls": "btn btn--ghost",
+      "attrs": {
+        "class": "btn btn--ghost",
+        "id": "keep-shopping",
+        "href": "/"
+      }
+    }
+  },
+  "cart.toCheckout": {
+    "kind": "role",
+    "primary": {
+      "role": "link",
+      "name": "Proceed to Checkout",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f3e22",
+      "role": "link",
+      "name": "Proceed to Checkout",
+      "text": null,
+      "url": "/checkout",
+      "placeholder": null,
+      "cursor": "pointer",
+      "box": {
+        "x": 469,
+        "y": 253,
+        "width": 176,
+        "height": 43
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "generic"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        ""
+      ],
+      "region": null,
+      "siblingIndex": 1,
+      "neighborTexts": [
+        "Keep Shopping"
+      ],
+      "interactive": true,
+      "tag": "a",
+      "id": "to-checkout",
+      "cls": "btn btn--primary",
+      "attrs": {
+        "class": "btn btn--primary",
+        "id": "to-checkout",
+        "href": "/checkout"
+      }
+    }
+  },
+  "checkout.email": {
+    "kind": "role",
+    "primary": {
+      "role": "textbox",
+      "name": "Email address",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f4e13",
+      "role": "textbox",
+      "name": "Email address",
+      "text": null,
+      "url": null,
+      "placeholder": "you@example.com",
+      "cursor": null,
+      "box": {
+        "x": 342,
+        "y": 228,
+        "width": 682,
+        "height": 43
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "region",
+        "generic"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Contact details",
+        ""
+      ],
+      "region": "Contact details",
+      "siblingIndex": 1,
+      "neighborTexts": [
+        "Email address"
+      ],
+      "interactive": true,
+      "tag": "input",
+      "id": "email",
+      "cls": "fld",
+      "attrs": {
+        "id": "email",
+        "class": "fld",
+        "name": "email",
+        "type": "email",
+        "placeholder": "you@example.com",
+        "required": ""
+      }
+    }
+  },
+  "checkout.promo": {
+    "kind": "role",
+    "primary": {
+      "role": "textbox",
+      "name": "Promo code",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f4e21",
+      "role": "textbox",
+      "name": "Promo code",
+      "text": null,
+      "url": null,
+      "placeholder": "SAVE10",
+      "cursor": null,
+      "box": {
+        "x": 828,
+        "y": 458,
+        "width": 196,
+        "height": 43
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "region",
+        "generic"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Promo code",
+        ""
+      ],
+      "region": "Promo code",
+      "siblingIndex": 1,
+      "neighborTexts": [
+        "Promo code",
+        "Apply Promo"
+      ],
+      "interactive": true,
+      "tag": "input",
+      "id": "promo",
+      "cls": "fld",
+      "attrs": {
+        "id": "promo",
+        "class": "fld",
+        "name": "promo",
+        "type": "text",
+        "placeholder": "SAVE10"
+      }
+    }
+  },
+  "checkout.applyPromo": {
+    "kind": "role",
+    "primary": {
+      "role": "button",
+      "name": "Apply Promo",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f4e22",
+      "role": "button",
+      "name": "Apply Promo",
+      "text": null,
+      "url": null,
+      "placeholder": null,
+      "cursor": "pointer",
+      "box": {
+        "x": 342,
+        "y": 511,
+        "width": 476,
+        "height": 43
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "region",
+        "generic"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Promo code",
+        ""
+      ],
+      "region": "Promo code",
+      "siblingIndex": 2,
+      "neighborTexts": [
+        "Promo code",
+        "Promo code"
+      ],
+      "interactive": true,
+      "tag": "button",
+      "id": "apply-promo",
+      "cls": "btn btn--ghost",
+      "attrs": {
+        "class": "btn btn--ghost",
+        "id": "apply-promo",
+        "type": "submit"
+      }
+    }
+  },
+  "checkout.terms": {
+    "kind": "role",
+    "primary": {
+      "role": "checkbox",
+      "name": "I agree to the terms of sale",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f4e38",
+      "role": "checkbox",
+      "name": "I agree to the terms of sale",
+      "text": null,
+      "url": null,
+      "placeholder": null,
+      "cursor": null,
+      "box": {
+        "x": 346,
+        "y": 883,
+        "width": 16,
+        "height": 16
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "region",
+        "generic",
+        "generic"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Place your order",
+        "",
+        ""
+      ],
+      "region": "Place your order",
+      "siblingIndex": 0,
+      "neighborTexts": [
+        "I agree to the terms of sale"
+      ],
+      "interactive": true,
+      "tag": "input",
+      "id": "terms",
+      "cls": "chk",
+      "attrs": {
+        "id": "terms",
+        "class": "chk",
+        "name": "terms",
+        "type": "checkbox"
+      }
+    }
+  },
+  "checkout.placeOrder": {
+    "kind": "role",
+    "primary": {
+      "role": "button",
+      "name": "Complete Purchase",
+      "exact": true
+    },
+    "fingerprint": {
+      "ref": "f4e43",
+      "role": "button",
+      "name": "Place Order",
+      "text": null,
+      "url": null,
+      "placeholder": null,
+      "cursor": "pointer",
+      "box": {
+        "x": 342,
+        "y": 969,
+        "width": 113,
+        "height": 43
+      },
+      "states": {
+        "disabled": null,
+        "checked": null,
+        "expanded": null,
+        "selected": null,
+        "pressed": null,
+        "level": null,
+        "invalid": null
+      },
+      "ancestorRoles": [
+        "generic",
+        "main",
+        "region",
+        "generic"
+      ],
+      "ancestorNames": [
+        "",
+        "",
+        "Place your order",
+        ""
+      ],
+      "region": "Place your order",
+      "siblingIndex": 1,
+      "neighborTexts": [
+        "I agree to the terms of sale I agree to the terms of sale"
+      ],
+      "interactive": true,
+      "tag": "button",
+      "id": "place-order-btn",
+      "cls": "btn btn--primary",
+      "attrs": {
+        "class": "btn btn--primary",
+        "id": "place-order-btn",
+        "type": "submit"
+      }
+    },
+    "healHistory": [
+      {
+        "from": {
+          "role": "button",
+          "name": "Place Order",
+          "exact": true
+        },
+        "to": {
+          "role": "button",
+          "name": "Complete Purchase",
+          "exact": true
+        },
+        "score": 0.8812898395721924,
+        "margin": 0.3556749597440907,
+        "reason": "scored 0.881 with a 0.356 margin over the runner-up"
+      }
+    ]
+  },
+  "checkout.subtotal": {
+    "kind": "css",
+    "primary": {
+      "selector": "#subtotal"
+    }
+  },
+  "checkout.discount": {
+    "kind": "css",
+    "primary": {
+      "selector": "#discount"
+    }
+  },
+  "checkout.tax": {
+    "kind": "css",
+    "primary": {
+      "selector": "#tax"
+    }
+  },
+  "checkout.orderTotal": {
+    "kind": "css",
+    "primary": {
+      "selector": "#order-total"
+    }
+  },
+  "confirm.chargedTotal": {
+    "kind": "css",
+    "primary": {
+      "selector": "#charged-total"
+    }
+  }
+}
