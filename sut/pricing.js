@@ -38,7 +38,7 @@ function calcTotal(items, promoCode) {
   const sub = subtotal(items)
   const discount = applyPromo(sub, promoCode)
   const tax = calcTax(sub - discount)
-  return sub - discount + tax
+  return sub - discount
 }
 
 const fmt = (cents) => `$${(cents / 100).toFixed(2)}`
