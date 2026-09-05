@@ -11,7 +11,18 @@ Two windows: **dashboard** at `localhost:4400`, **break panel** at `localhost:43
 
 Verify: 6/6 green, verdict WARN, `git log --oneline` clean. Then `node scripts/mutate.js reset`.
 
-**Rehearse the `off` LLM path.** It is the default and it works — don't discover that live.
+**LLM.** `.env` ships `GLASSBOX_LLM=record`, which is cache-first: rehearsed beats replay instantly, unrehearsed input goes live, and a dead network falls back to template prose. Verify the endpoint before you go on:
+
+```bash
+npm run llm:probe        # expect: DETECTED: openai
+```
+
+Two things to know:
+
+- **On IBM network it is live.** The judge types a label you never rehearsed, and the insight line is genuinely about *their* words. That is worth more than a cached sentence.
+- **Off IBM network it degrades to `COMPUTED` template prose** and everything else is unchanged. If that happens, say it: *"the model is unreachable on this wifi, so that sentence is template-generated — and notice every number is still there, because none of them came from a model."* That is a stronger moment than pretending.
+
+Rehearse both. `GLASSBOX_LLM=off npm run run` is the worst case, and it still works end to end.
 
 ---
 

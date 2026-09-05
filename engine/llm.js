@@ -7,8 +7,11 @@
  * THREE MODES, and the mode is shown on screen as a badge so this is honest rather than
  * deceptive:
  *   off     no model at all; deterministic template prose from the typed change records
- *   record  call live, cache the response to disk
- *   replay  serve ONLY from cache — zero network, zero latency, zero variance. USE ON STAGE.
+ *   record  CACHE-FIRST, then live on a miss, then template on failure. Best for a demo:
+ *           rehearsed beats replay instantly from cache, and a judge typing something
+ *           unrehearsed still gets a real answer.
+ *   replay  serve ONLY from cache — zero network, zero latency, zero variance. Anything
+ *           not previously recorded falls back to template prose.
  *
  * `off` is the default when no key is configured, and it is a FULLY WORKING path, not a
  * degraded one. An ICA endpoint will almost certainly need the corporate network, which
@@ -76,21 +79,35 @@ function saveShape(shape, detail) {
 const SHAPES = {
   openai: {
     url: (c) => `${c.base}/chat/completions`,
-    body: (c, system, user) => ({
-      model: c.model, temperature: 0, max_tokens: 400,
+    /**
+     * NOTE: `temperature` is deliberately NOT sent.
+     *
+     * The ICA LiteLLM proxy rejects temperature=0 for Claude models outright:
+     *   litellm.UnsupportedParamsError: claude-sonnet-5 does not support temperature=0.
+     *   Only temperature=1 is supported.
+     * and other model families on the same proxy do accept 0. Omitting the parameter is
+     * the portable choice — every model applies its own default and nothing 400s.
+     *
+     * The consequence is worth being explicit about: we CANNOT get temperature-0
+     * determinism from Claude here. So determinism comes from `replay` serving a recorded
+     * cache, which is the only mechanism that actually gives zero variance on stage.
+     */
+    body: (c, system, user, maxTokens) => ({
+      model: c.model,
+      max_tokens: maxTokens || 400,
       messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
     }),
     text: (j) => j?.choices?.[0]?.message?.content,
   },
   'ica-query': {
     url: (c) => `${c.base}/${encodeURIComponent(c.model)}/completion`,
-    body: (_c, system, user) => ({ query: user, system_prompt: system, parameters: { temperature: 0 } }),
+    body: (_c, system, user) => ({ query: user, system_prompt: system }),
     text: (j) => j?.response ?? j?.generated_text ?? j?.result ?? j?.output ?? j?.answer,
   },
   'ica-messages': {
     url: (c) => `${c.base}/${encodeURIComponent(c.model)}/completion`,
-    body: (c, system, user) => ({
-      model: c.model, temperature: 0,
+    body: (c, system, user, maxTokens) => ({
+      model: c.model, max_tokens: maxTokens || 400,
       messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
     }),
     text: (j) =>
@@ -108,24 +125,22 @@ const SHAPE_NAMES = Object.keys(SHAPES)
 /**
  * Auth headers.
  *
- * The ICA beta endpoint rejects with a GENERIC `{"error":"Invalid icaKey"}` for every
- * header variant — including sending no auth header at all — so the header it actually
- * reads cannot be identified from outside without a valid key. (Probed: Authorization
- * Bearer, bare Authorization, icaKey, Integration-Id, api-key, x-api-key. All identical.)
+ * `Authorization` is the one that matters — determined by sending each candidate in
+ * isolation against the live endpoint with a valid key:
  *
- * So we send the key in every plausible header at once. HTTP servers ignore headers they
- * do not recognise, so this costs nothing and removes the guess entirely — whichever one
- * ICA reads is satisfied. If a stricter deployment ever objects, `npm run llm:probe`
- * surfaces it immediately.
+ *   Authorization: Bearer <key>   -> 200
+ *   Authorization: <key>          -> 200
+ *   icaKey / api-key / x-api-key  -> 400 {"error":"Invalid icaKey"}
+ *   no header at all              -> 400 {"error":"Invalid icaKey"}
+ *
+ * Worth noting the trap: with an INVALID key every variant returns that same generic 400,
+ * so the header cannot be identified until you hold a working key. Before that, sending
+ * the key in several headers at once is the right hedge; once you know, send only this.
  */
 function headers(c) {
   const h = { 'Content-Type': 'application/json', Accept: 'application/json' }
-  if (c.key) {
-    h.Authorization = `Bearer ${c.key}`
-    h.icaKey = c.key
-    h['api-key'] = c.key
-    h['x-api-key'] = c.key
-  }
+  if (c.key) h.Authorization = `Bearer ${c.key}`
+  // Some ICA deployments additionally gate on these; sent only when configured.
   if (c.integrationId) h['Integration-Id'] = c.integrationId
   if (c.extensionName) h['Extension-Name'] = c.extensionName
   return h
@@ -171,7 +186,7 @@ function store(key, value) {
 const SYSTEM = 'You are a QA engineer. Reply with strict JSON only, no prose outside the JSON.'
 
 /** One raw call. Returns { ok, text, status, error } — never throws. */
-async function callRaw(c, shapeName, system, user, timeoutMs = 20000) {
+async function callRaw(c, shapeName, system, user, timeoutMs = 10000, maxTokens = 400) {
   const shape = SHAPES[shapeName]
   if (!shape) return { ok: false, error: `unknown shape ${shapeName}` }
   const url = shape.url(c)
@@ -179,7 +194,7 @@ async function callRaw(c, shapeName, system, user, timeoutMs = 20000) {
     const res = await fetch(url, {
       method: 'POST',
       headers: headers(c),
-      body: JSON.stringify(shape.body(c, system, user)),
+      body: JSON.stringify(shape.body(c, system, user, maxTokens)),
       signal: AbortSignal.timeout(timeoutMs),
     })
     const raw = await res.text()
@@ -198,7 +213,7 @@ async function callRaw(c, shapeName, system, user, timeoutMs = 20000) {
  * Ask for JSON. Returns the parsed object, or null — and every caller has a
  * deterministic fallback, so null is never fatal.
  */
-async function ask(prompt, { maxTokens } = {}) {
+async function ask(prompt, { maxTokens = 400 } = {}) {
   const m = mode()
   const c = config()
   const key = hash(`${c.model}|${c.shape || 'auto'}|${prompt}`)
@@ -209,7 +224,7 @@ async function ask(prompt, { maxTokens } = {}) {
   if (m === 'replay') return null // replay never touches the network
 
   const shapeName = c.shape || 'openai'
-  const r = await callRaw(c, shapeName, SYSTEM, prompt)
+  const r = await callRaw(c, shapeName, SYSTEM, prompt, 10000, maxTokens)
   if (!r.ok) return null
 
   try {

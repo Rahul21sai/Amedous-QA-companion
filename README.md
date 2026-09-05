@@ -192,24 +192,45 @@ GLASSBOX_LLM=off          # off | record | replay
 npm run llm:probe         # verify the endpoint and detect its wire format
 ```
 
-**Modes.** `record` calls live and caches every response; **`replay` serves only from cache** — zero network, zero latency, zero variance, which is what you want on stage; `off` uses deterministic template prose. Default is `off`, and **`off` is a fully working path, not a degraded one** — an ICA endpoint needs the corporate network, which conference wifi will not have, so nothing in the demo may depend on a network call.
+**Modes.**
 
-The badge on screen says not just the mode but the **reason** — e.g. `LLM: off — ICA_API_KEY is empty`. A badge reading only "off" invites *"is the AI part even real?"*; one that names the cause answers it.
+| Mode | Behaviour | Use when |
+|---|---|---|
+| `off` | no model; deterministic template prose | no network, or you want every figure `COMPUTED` |
+| `record` | **cache-first → live on miss → template on failure** | **recommended for the demo** |
+| `replay` | cache only, never touches the network | you want guaranteed zero variance |
 
-### What the probe established about this endpoint
+`record` is the best stage mode because it is cache-first: rehearsed beats replay instantly, an unrehearsed input still gets a real answer, and a dead network degrades to template prose rather than hanging. Live calls time out at 10s — the whole suite runs in ~9s, so a longer hang is not worth standing through.
 
-`/ica/v1/chat-models` is **not** the OpenAI `/v1/chat/completions` path, so rather than guess, `scripts/llm-probe.js` tests candidate shapes against the live endpoint. Findings:
+**`off` is a fully working path, not a degraded one.** Nothing in the demo depends on a network call.
+
+The badge on screen names the mode *and the reason* — e.g. `LLM: off — ICA_API_KEY is empty`. A badge reading only "off" invites *"is the AI part even real?"*; one that names the cause answers it.
+
+### What the probe established — verified against the live endpoint
+
+`scripts/llm-probe.js` tests candidate wire formats rather than assuming one:
 
 | Route | Status | Meaning |
 |---|---|---|
-| `…/definitely-not-a-real-route-xyz` | 404 `{"detail":"Not Found"}` | **control** |
-| `…/chat/completions` | 400 `{"error":"Invalid icaKey"}` | **exists** — reached auth |
-| `…/models` | 400 `{"error":"Invalid icaKey"}` | exists |
+| `…/bogus-control-xyz` | 404 `{"detail":"Not Found"}` | **control** |
+| `…/chat/completions` | **200** — real completion | **this is the one** |
+| `…/models` | 405 on POST, 200 on GET | model listing |
 | `…/completion`, `…/{model}/completion`, `…/{model}/invoke` | 404 | do not exist |
 
-A 400 rather than a 404 means the route resolved and only the credential was rejected. So **this deployment is OpenAI-compatible**: `POST {base}/chat/completions` with `{messages:[...]}`. That's pinned as `GLASSBOX_LLM_SHAPE=openai`.
+The bogus control is what makes this conclusive — without it you cannot distinguish "route missing" from "route present, credential rejected", and you end up debugging auth against a URL that was never right.
 
-The auth header could **not** be identified from outside: `Authorization: Bearer`, bare `Authorization`, `icaKey`, `Integration-Id`, `api-key`, `x-api-key` and *sending no header at all* all return the identical generic `Invalid icaKey`. So the client sends the key in every plausible header at once — servers ignore headers they don't recognise, which removes the guess at no cost.
+So this deployment is a **LiteLLM proxy speaking the OpenAI chat-completions API** (`GLASSBOX_LLM_SHAPE=openai`), with 20 models available including `claude-sonnet-5`.
+
+**Auth:** `Authorization: Bearer <key>` — established by sending each candidate in isolation. `icaKey`, `api-key`, `x-api-key` and *no header* all return `400 {"error":"Invalid icaKey"}`. Note the trap: with an **invalid** key every variant returns that same generic 400, so the header is unidentifiable until you hold a working key.
+
+**Determinism caveat, stated plainly:** this proxy *rejects* `temperature=0` for Claude —
+
+```
+litellm.UnsupportedParamsError: claude-sonnet-5 does not support temperature=0.
+Only temperature=1 is supported.
+```
+
+So `temperature` is not sent at all and **live calls vary run to run**. Determinism comes from the replay cache, not the sampler. That is why the cache exists.
 
 ### The model's authority is deliberately narrow
 

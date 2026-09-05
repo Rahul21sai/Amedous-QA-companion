@@ -22,12 +22,7 @@ function line(s = '') { console.log(s) }
 /** Same auth headers llm.js sends, so route probes are apples-to-apples. */
 function headersFor(cfg) {
   const h = { 'Content-Type': 'application/json', Accept: 'application/json' }
-  if (cfg.key) {
-    h.Authorization = `Bearer ${cfg.key}`
-    h.icaKey = cfg.key
-    h['api-key'] = cfg.key
-    h['x-api-key'] = cfg.key
-  }
+  if (cfg.key) h.Authorization = `Bearer ${cfg.key}`
   if (cfg.integrationId) h['Integration-Id'] = cfg.integrationId
   if (cfg.extensionName) h['Extension-Name'] = cfg.extensionName
   return h
