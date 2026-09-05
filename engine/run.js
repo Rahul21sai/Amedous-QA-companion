@@ -144,8 +144,22 @@ async function main() {
       const n = registry.recordFingerprints(fps)
       reg = registry.load()
       log(`recorded ${n} locator fingerprints — this is what self-healing scores against`)
+
+      // A baseline that cannot fingerprint every healable key is NOT a baseline. Fail loud.
+      //
+      // The silent version of this is genuinely dangerous: if the app is already mutated
+      // when the baseline runs, the canonical locator matches nothing, no fingerprint is
+      // recorded, and every later heal refuses with "no fingerprint recorded" — correct
+      // behaviour that looks like a broken product, and impossible to debug live.
       const missing = Object.entries(reg).filter(([, e]) => e.kind === 'role' && !e.fingerprint).map(([k]) => k)
-      if (missing.length) log(`WARNING: no fingerprint for ${missing.join(', ')}`)
+      if (missing.length) {
+        console.error(`\nBASELINE FAILED — could not fingerprint: ${missing.join(', ')}\n`)
+        console.error('The canonical locator for each key above matched nothing on the page, which almost')
+        console.error('always means the app is already mutated. Restore it and re-run:\n')
+        console.error('    node scripts/mutate.js reset && node engine/run.js --baseline\n')
+        await browser.close()
+        process.exit(3)
+      }
     } else {
       const before = {}
       for (const p of PAGES) {
@@ -244,6 +258,7 @@ async function main() {
         const record = {
           key: cluster.key, specs: cluster.specs, classification: verdict.verdict,
           decision: decision.decision, reason: decision.reason,
+          identityOverride: !!decision.identityOverride,
           score: decision.score ?? null, margin: decision.margin ?? null,
           breakdown: decision.best ? decision.best.breakdown : [],
           weightSum: decision.best ? decision.best.weightSum : null,
@@ -418,7 +433,19 @@ async function main() {
     console.log(`\nwrote .glassbox/last-run.json`)
   }
 
-  process.exitCode = result.verdict.verdict === 'BLOCK' && IS_BASELINE ? 1 : 0
+  // A baseline with a failing spec is also not a baseline — the fingerprints it recorded
+  // describe a broken app, so every later comparison is against the wrong reference.
+  if (IS_BASELINE) {
+    const failed = result.specs.filter((s) => s.status === 'fail')
+    if (failed.length) {
+      console.error(`\nBASELINE FAILED — ${failed.length} spec(s) did not pass: ${failed.map((s) => s.id).join(', ')}`)
+      console.error('Fingerprints recorded from a red baseline describe a broken app. Fix the app, then re-run.\n')
+      process.exitCode = 3
+      return
+    }
+  }
+
+  process.exitCode = 0
 }
 
 module.exports = { main, sinks }

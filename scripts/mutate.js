@@ -51,7 +51,8 @@ const MUTATIONS = {
     apply(label) {
       const file = path.join(PUB, 'checkout.html')
       const html = read(file)
-      const m = /(<button class="btn btn--primary" id="place-order-btn" type="submit">)([^<]*)(<\/button>)/.exec(html)
+      // Anchored on class + type, never on the id, so this still works after `strip-ids`.
+      const m = /(<button class="btn btn--primary"[^>]*type="submit">)([^<]*)(<\/button>)/.exec(html)
       if (!m) throw new Error('could not find the place-order button in checkout.html')
       if (m[2].trim() === label.trim()) throw new Error(`the button is already labelled "${label}"`)
       write(file, html.replace(m[0], `${m[1]}${label}${m[3]}`))
@@ -83,15 +84,39 @@ const MUTATIONS = {
     describe: () => 'add a near-identical "Place Order Later" button',
     apply() {
       const file = path.join(PUB, 'checkout.html')
-      if (read(file).includes('place-order-later-btn')) throw new Error('decoy already present (run reset first)')
-      edit(
+      const html = read(file)
+      if (html.includes('Place Order Later')) throw new Error('decoy already present (run reset first)')
+      // The decoy deliberately carries NO id, so it can never masquerade as the real
+      // element's identity anchor. It competes on similarity only, which is the point.
+      const m = /( *)(<button class="btn btn--primary"[^>]*type="submit">)/.exec(html)
+      if (!m) throw new Error('could not find the place-order button in checkout.html')
+      write(
         file,
-        '        <button class="btn btn--primary" id="place-order-btn" type="submit">',
-        '        <button class="btn btn--ghost" id="place-order-later-btn" type="button">Place Order Later</button>\n' +
-          '        <button class="btn btn--primary" id="place-order-btn" type="submit">',
-        'decoy insertion point'
+        html.replace(
+          m[0],
+          `${m[1]}<button class="btn btn--ghost" type="button">Place Order Later</button>\n${m[1]}${m[2]}`
+        )
       )
-      return 'added "Place Order Later" — two candidates now sit inside the heal margin'
+      return 'added "Place Order Later" — a near-twin competing on similarity alone'
+    },
+  },
+
+  'strip-ids': {
+    // Realistic, not contrived: plenty of design systems and CSS-in-JS setups emit no
+    // stable ids at all, or regenerate them with a build hash. With no id to anchor on,
+    // the identity override cannot fire and the scorer has to rely on similarity alone —
+    // which is exactly when the ambiguity gate earns its keep.
+    kind: 'presentation',
+    describe: () => 'remove stable ids from the checkout buttons',
+    apply() {
+      const file = path.join(PUB, 'checkout.html')
+      const html = read(file)
+      const next = html
+        .replace(' id="place-order-btn"', '')
+        .replace(' id="place-order-later-btn"', '')
+      if (next === html) throw new Error('checkout button ids already stripped (run reset first)')
+      write(file, next)
+      return 'checkout buttons no longer carry ids — healing must fall back to similarity'
     },
   },
 

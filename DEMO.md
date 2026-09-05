@@ -82,16 +82,24 @@ Note the badge on the card:
 
 > "It says *identity override*. The score was only 0.73, because when a link becomes a button it loses the role and tag points — the correct element can actually score below an unrelated sibling that kept its `<a>`. But the `id` never changed and matches exactly one element. **A unique unchanged id is identity, not similarity**, so we heal and we say why on screen."
 
-### Optional: the ambiguity gate
+### The ambiguity gate
 
 ```bash
-node scripts/mutate.js decoy-button
+node scripts/mutate.js reset && npm run baseline
+node scripts/mutate.js strip-ids          # a component library that emits no stable ids
+node scripts/mutate.js decoy-button       # a near-twin: "Place Order Later"
 node scripts/mutate.js rename-cta "Place Order Now"
 ```
 
-Two buttons: `Place Order Now` (0.857) and `Place Order Later` (0.838). Margin 0.019.
+> "First I'm removing the ids — which is just reality for a lot of design systems and CSS-in-JS setups. Now there's nothing to anchor identity on, so healing has to fall back to similarity. And I've added a near-twin button."
 
-> "It **escalated instead of healing** — and notice its top pick was actually right. It still refused, because a 0.019 margin isn't confidence, it's a coin flip. Healenium ships an absolute threshold. Similo ships argmax. Both would have silently bound to the winner, and if they'd picked wrong you'd have a permanently green test asserting nothing. That's the failure mode nobody in this market talks about."
+Two candidates: `Place Order Now` **0.817** vs `Place Order Later` **0.810**. Margin **0.008**.
+
+> "It **escalated instead of healing** — and notice its top pick was actually right. It still refused, because a 0.008 margin isn't confidence, it's a coin flip. Healenium ships an absolute threshold. Similo ships argmax. Both would have silently bound to the winner, and if they'd picked wrong you'd have a permanently green test asserting nothing — forever. That's the failure mode nobody in this market talks about."
+
+Contrast it with the previous beat:
+
+> "And when the id *was* there, it healed without hesitating and told you why: *identity override*. Same system, two different answers, both defensible — because the confidence is computed, not asserted."
 
 ---
 

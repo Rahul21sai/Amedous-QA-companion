@@ -112,10 +112,19 @@ npm run baseline
 
 node scripts/mutate.js rename-cta "Anything You Like"   # → AUTO-HEAL, arithmetic on screen
 node scripts/mutate.js link-to-button                   # → ROLE_CHANGED (pixel-identical)
-node scripts/mutate.js decoy-button                     # then rename → ESCALATE, refuses to guess
+node scripts/mutate.js strip-ids                        # no stable ids, as many design systems do
+node scripts/mutate.js decoy-button                     # a near-twin candidate
 node scripts/mutate.js break-total                      # → PRODUCT BUG, refuses, BLOCK
 node scripts/mutate.js drop-audit-log                   # → OWASP A09:2025
 node scripts/mutate.js reset                            # back to the pristine tag
+```
+
+Mutations compose. `strip-ids` + `decoy-button` + `rename-cta` removes every identity anchor and leaves two near-twin buttons, which is the case that makes the **ambiguity gate** fire:
+
+```
+best candidate: button "Place Order Now"   @ 0.8171
+runner-up:      button "Place Order Later" @ 0.8096   margin 0.0076
+DECISION ESCALATED_AMBIGUOUS — picking one would be a guess.
 ```
 
 Every mutation **edits a real source file and makes a real git commit** — not a `?v=2` query flag. That is what makes `git diff` real, and it is what lets you hand someone else the keyboard.
