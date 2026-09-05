@@ -427,7 +427,7 @@
       "exact": true
     },
     "fingerprint": {
-      "ref": "f4e21",
+      "ref": "f4e22",
       "role": "textbox",
       "name": "Promo code",
       "text": null,
@@ -436,7 +436,7 @@
       "cursor": null,
       "box": {
         "x": 828,
-        "y": 458,
+        "y": 483,
         "width": 196,
         "height": 43
       },
@@ -488,7 +488,7 @@
       "exact": true
     },
     "fingerprint": {
-      "ref": "f4e22",
+      "ref": "f4e23",
       "role": "button",
       "name": "Apply Promo",
       "text": null,
@@ -497,7 +497,7 @@
       "cursor": "pointer",
       "box": {
         "x": 342,
-        "y": 511,
+        "y": 535,
         "width": 476,
         "height": 43
       },
@@ -547,7 +547,7 @@
       "exact": true
     },
     "fingerprint": {
-      "ref": "f4e38",
+      "ref": "f4e41",
       "role": "checkbox",
       "name": "I agree to the terms of sale",
       "text": null,
@@ -556,7 +556,7 @@
       "cursor": null,
       "box": {
         "x": 346,
-        "y": 883,
+        "y": 936,
         "width": 16,
         "height": 16
       },
@@ -604,7 +604,7 @@
     "kind": "role",
     "primary": {
       "role": "button",
-      "name": "Complete Purchase",
+      "name": "Place Order",
       "exact": true
     },
     "fingerprint": {
@@ -656,24 +656,7 @@
         "id": "place-order-btn",
         "type": "submit"
       }
-    },
-    "healHistory": [
-      {
-        "from": {
-          "role": "button",
-          "name": "Place Order",
-          "exact": true
-        },
-        "to": {
-          "role": "button",
-          "name": "Complete Purchase",
-          "exact": true
-        },
-        "score": 0.8812898395721924,
-        "margin": 0.3556749597440907,
-        "reason": "scored 0.881 with a 0.356 margin over the runner-up"
-      }
-    ]
+    }
   },
   "checkout.subtotal": {
     "kind": "css",

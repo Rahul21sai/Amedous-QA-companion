@@ -139,8 +139,25 @@ function main() {
   }
 
   if (name === 'reset') {
-    git(['checkout', '--', 'sut/'])
-    console.log('reset: sut/ reverted to the committed baseline')
+    // Restore from the PRISTINE TAG, not from HEAD. Once a mutation has been committed,
+    // HEAD contains the mutation, so `git checkout -- sut/` would restore the broken
+    // version and reset would silently do nothing.
+    const tag = git(['rev-parse', '--verify', 'pristine']).trim()
+    if (!tag || tag.startsWith('fatal')) {
+      console.error('no "pristine" tag. Create it once:  git tag pristine <baseline-sha>')
+      process.exit(1)
+    }
+    git(['checkout', 'pristine', '--', 'sut/'])
+    git(['add', 'sut/'])
+    // History stays append-only, so the full sequence of what was broken and reverted is
+    // still on screen in `git log` during the demo.
+    const dirty = git(['diff', '--cached', '--name-only']).trim()
+    if (dirty) {
+      git(['commit', '-m', 'chore(sut): reset to pristine', '--no-verify'])
+      console.log(`reset: sut/ restored from tag pristine (${tag.slice(0, 7)}) and committed`)
+    } else {
+      console.log('reset: sut/ already matches pristine — nothing to do')
+    }
     return
   }
 

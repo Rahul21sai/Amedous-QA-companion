@@ -1,0 +1,130 @@
+{
+  "_doc": [
+    "CANONICAL LOCATORS — the seed. The healer NEVER writes this file.",
+    "",
+    "engine/registry.json is live state: it accumulates fingerprints and healHistory as runs",
+    "happen. This file is the source of truth for what each locator SHOULD be, and",
+    "`run.js --baseline` restores primaries from here before recording fresh fingerprints.",
+    "",
+    "Without this, a rehearsal leaves the registry holding the previous heal, so the next",
+    "baseline run starts already-broken, heals itself, and is not actually a baseline."
+  ],
+  "nav.shop": {
+    "kind": "role",
+    "primary": {
+      "role": "link",
+      "name": "Shop",
+      "exact": true
+    }
+  },
+  "nav.cart": {
+    "kind": "role",
+    "primary": {
+      "role": "link",
+      "name": "Cart",
+      "exact": false
+    }
+  },
+  "shop.addLens": {
+    "kind": "role",
+    "primary": {
+      "role": "button",
+      "name": "Add Aperture 35mm Lens to Cart",
+      "exact": true
+    }
+  },
+  "shop.addTripod": {
+    "kind": "role",
+    "primary": {
+      "role": "button",
+      "name": "Add Tripod Carbon Mk II to Cart",
+      "exact": true
+    }
+  },
+  "cart.keepShopping": {
+    "kind": "role",
+    "primary": {
+      "role": "link",
+      "name": "Keep Shopping",
+      "exact": true
+    }
+  },
+  "cart.toCheckout": {
+    "kind": "role",
+    "primary": {
+      "role": "link",
+      "name": "Proceed to Checkout",
+      "exact": true
+    }
+  },
+  "checkout.email": {
+    "kind": "role",
+    "primary": {
+      "role": "textbox",
+      "name": "Email address",
+      "exact": true
+    }
+  },
+  "checkout.promo": {
+    "kind": "role",
+    "primary": {
+      "role": "textbox",
+      "name": "Promo code",
+      "exact": true
+    }
+  },
+  "checkout.applyPromo": {
+    "kind": "role",
+    "primary": {
+      "role": "button",
+      "name": "Apply Promo",
+      "exact": true
+    }
+  },
+  "checkout.terms": {
+    "kind": "role",
+    "primary": {
+      "role": "checkbox",
+      "name": "I agree to the terms of sale",
+      "exact": true
+    }
+  },
+  "checkout.placeOrder": {
+    "kind": "role",
+    "primary": {
+      "role": "button",
+      "name": "Place Order",
+      "exact": true
+    }
+  },
+  "checkout.subtotal": {
+    "kind": "css",
+    "primary": {
+      "selector": "#subtotal"
+    }
+  },
+  "checkout.discount": {
+    "kind": "css",
+    "primary": {
+      "selector": "#discount"
+    }
+  },
+  "checkout.tax": {
+    "kind": "css",
+    "primary": {
+      "selector": "#tax"
+    }
+  },
+  "checkout.orderTotal": {
+    "kind": "css",
+    "primary": {
+      "selector": "#order-total"
+    }
+  },
+  "confirm.chargedTotal": {
+    "kind": "css",
+    "primary": {
+      "selector": "#charged-total"
+    }
+  }
+}

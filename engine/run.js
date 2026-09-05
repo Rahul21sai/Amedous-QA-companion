@@ -50,6 +50,10 @@ function emit(e) {
   const ev = { t: Date.now(), ...e }
   events.push(ev)
   for (const s of sinks) { try { s(ev) } catch {} }
+  // When the dashboard spawns this process it reads events off stdout as NDJSON. Keeping
+  // the transport this dumb is deliberate: run.js stays a standalone CLI, so the terminal
+  // fallback keeps working whether or not a dashboard is attached.
+  if (process.env.GLASSBOX_STREAM) process.stdout.write('@@GBX@@' + JSON.stringify(ev) + '\n')
   if (!QUIET && e.type === 'phase') console.log(`\n=== ${e.name.toUpperCase()} ${'='.repeat(Math.max(0, 44 - e.name.length))}`)
   if (!QUIET && e.type === 'log') console.log(`  ${e.message}`)
 }
@@ -126,6 +130,13 @@ async function main() {
     let reg = registry.load()
 
     if (IS_BASELINE) {
+      // Restore canonical locators from the seed FIRST. Otherwise a previous rehearsal's
+      // heal is still in registry.json, so the "baseline" starts already-broken, heals
+      // itself, and is not a baseline at all. This is what makes rehearsal repeatable.
+      const restored = registry.restoreFromSeed()
+      log(`restored ${restored} canonical locators from registry.seed.json`)
+      reg = registry.load()
+
       for (const [name, cap] of Object.entries(captures)) {
         fs.writeFileSync(path.join(BASELINE, `${name}.json`), JSON.stringify(cap, null, 1))
       }
@@ -198,7 +209,7 @@ async function main() {
       log(`${failures.length} failing spec(s) clustered into ${clusters.length} root cause(s) — one change, one fix, not ${failures.length} fixes`)
 
       const thresholds = gate.loadPolicy().thresholds
-      const allNodes = Object.values(captures).flatMap((c) => c.nodes).filter((n) => n.interactive)
+      const allNodes = heal.dedupeCandidates(Object.values(captures).flatMap((c) => c.nodes).filter((n) => n.interactive))
 
       for (const cluster of clusters) {
         const sample = failures.find((f) => (f.failure.key || '(none)') === cluster.key)
@@ -379,6 +390,7 @@ async function main() {
 
   fs.writeFileSync(path.join(STATE, 'last-run.json'), JSON.stringify(result, null, 2))
   fs.writeFileSync(path.join(STATE, 'last-events.json'), JSON.stringify(events, null, 2))
+  emit({ type: 'done', result })
 
   if (QUIET) {
     console.log(`${result.verdict.verdict}  specs=${result.specs.filter((s) => s.status === 'pass').length}/${result.specs.length}  heals=${result.roi.healsApplied}  refusals=${result.roi.refusals}  ${result.ms}ms`)

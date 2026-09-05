@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GlassBox QA — Autonomous Quality Engineering</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>GlassBox QA</h1>
+    <p class="tag">Self-healing tests that refuse to lie.</p>
+  </div>
+  <div class="controls">
+    <span class="badge badge--mode" id="llm-mode">LLM: —</span>
+    <button class="btn btn--ghost" id="btn-baseline">Run Baseline</button>
+    <button class="btn btn--primary" id="btn-run">Run</button>
+  </div>
+</header>
+
+<!-- The organizer's own flow diagram. Nodes light from real pipeline events, never timers. -->
+<section class="flow" aria-label="Pipeline">
+  <div class="fnode" data-phase="change detection"><span class="fnode__k">Change Detection</span><span class="fnode__v" id="f-changes">—</span></div>
+  <div class="farrow">&rarr;</div>
+  <div class="fgroup">
+    <div class="fgroup__label">AI QA Engine</div>
+    <div class="fgroup__row">
+      <div class="fnode fnode--sm" data-phase="risk-based test selection"><span class="fnode__k">Risk Selection</span><span class="fnode__v" id="f-select">—</span></div>
+      <div class="fnode fnode--sm" data-phase="self-healing"><span class="fnode__k">Self-Healing</span><span class="fnode__v" id="f-heals">—</span></div>
+      <div class="fnode fnode--sm" data-phase="re-run after heal"><span class="fnode__k">Re-run</span><span class="fnode__v" id="f-rerun">—</span></div>
+    </div>
+  </div>
+  <div class="farrow">&rarr;</div>
+  <div class="fgroup">
+    <div class="fgroup__label">Quality Validation</div>
+    <div class="fgroup__row">
+      <div class="fnode fnode--sm" data-phase="quality validation — ui"><span class="fnode__k">UI</span><span class="fnode__v" id="f-ui">—</span></div>
+      <div class="fnode fnode--sm" data-phase="quality validation — security, accessibility, performance"><span class="fnode__k">Security</span><span class="fnode__v" id="f-sec">—</span></div>
+      <div class="fnode fnode--sm" data-phase="quality validation — security, accessibility, performance"><span class="fnode__k">A11y</span><span class="fnode__v" id="f-a11y">—</span></div>
+      <div class="fnode fnode--sm" data-phase="quality validation — security, accessibility, performance"><span class="fnode__k">Perf</span><span class="fnode__v" id="f-perf">—</span></div>
+    </div>
+  </div>
+  <div class="farrow">&rarr;</div>
+  <div class="fnode fnode--verdict" data-phase="release decision" id="f-verdict-node">
+    <span class="fnode__k">Release Decision</span><span class="fnode__v" id="f-verdict">—</span>
+  </div>
+</section>
+
+<main class="grid">
+
+  <!-- The anti-fakery artifact: per-property arithmetic that sums to the total on screen. -->
+  <section class="panel panel--wide">
+    <h2>Heal Inspector <span class="badge">COMPUTED</span></h2>
+    <div id="heal-empty" class="empty">No heal decisions yet. Break something and run.</div>
+    <div id="heal-cards"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Change Records <span class="badge">COMPUTED</span></h2>
+    <div id="changes" class="list"><div class="empty">—</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Tests</h2>
+    <div id="specs" class="list"><div class="empty">—</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Security <span class="badge">OWASP 2025</span></h2>
+    <div id="security" class="list"><div class="empty">—</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Accessibility <span class="badge">axe-core</span></h2>
+    <div id="a11y" class="list"><div class="empty">—</div></div>
+    <p class="caveat">axe covers machine-checkable rules only — roughly 30–40% of WCAG. Zero violations does not mean accessible.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Performance <span class="badge">COMPUTED</span></h2>
+    <div id="perf" class="list"><div class="empty">—</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Traceability <span class="badge">intent &rarr; test &rarr; verdict</span></h2>
+    <div id="trace" class="list"><div class="empty">—</div></div>
+  </section>
+
+  <section class="panel panel--wide">
+    <h2>Release Decision <span class="badge">policy: gate.json</span></h2>
+    <div class="verdict-row">
+      <div class="verdict-pill" id="verdict-pill">—</div>
+      <div class="verdict-headline" id="verdict-headline">Run the pipeline to get a decision.</div>
+    </div>
+    <div id="rules" class="rules"></div>
+    <p class="caveat" id="thresholds">—</p>
+  </section>
+
+  <section class="panel">
+    <h2>Maintenance saved</h2>
+    <div id="roi" class="list"><div class="empty">—</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Insight <span class="badge" id="insight-badge">—</span></h2>
+    <p id="insight" class="insight">—</p>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span>Playwright ships a planner, a generator and a healer. This is the layer that decides whether healing is <b>allowed</b>.</span>
+  <span id="clock"></span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -17,7 +17,22 @@ const express = require('express')
 const fs = require('fs')
 const path = require('path')
 const catalog = require('./catalog')
-const pricing = require('./pricing')
+
+/**
+ * Hot-reload the business logic on every read.
+ *
+ * HTML is read fresh from disk each request, but `require` CACHES JS — so without this a
+ * logic mutation (scripts/mutate.js break-total) edits pricing.js on disk while the running
+ * server happily keeps calling the old function. The money test then PASSES and the refusal
+ * beat silently does not happen.
+ *
+ * Busting the cache keeps one rule true for the whole app: edit a file, it is live.
+ */
+const PRICING_PATH = require.resolve('./pricing')
+function loadPricing() {
+  delete require.cache[PRICING_PATH]
+  return require('./pricing')
+}
 
 const PORT = 4300
 const PUB = path.join(__dirname, 'public')
@@ -67,6 +82,7 @@ const esc = (s) =>
 // ---------------------------------------------------------------------------
 app.get('/', (req, res) => {
   const s = session(req, res)
+  const pricing = loadPricing()
   const rows = catalog
     .map(
       (p) => `      <li class="card" data-product="${p.id}">
@@ -85,6 +101,7 @@ app.get('/', (req, res) => {
 
 app.get('/cart', (req, res) => {
   const s = session(req, res)
+  const pricing = loadPricing()
   const rows = s.cart.length
     ? s.cart
         .map((i) => {
@@ -112,6 +129,7 @@ app.post('/cart/add', (req, res) => {
 app.get('/checkout', (req, res) => {
   const s = session(req, res)
   const items = s.cart.map((i) => ({ ...catalog.find((c) => c.id === i.id), qty: i.qty }))
+  const pricing = loadPricing()
   const sub = pricing.subtotal(items)
   res.type('html').send(
     render('checkout.html', {
@@ -135,6 +153,7 @@ app.post('/checkout/promo', (req, res) => {
   const s = session(req, res)
   const items = s.cart.map((i) => ({ ...catalog.find((c) => c.id === i.id), qty: i.qty }))
   const code = String(req.body.promo || '')
+  const pricing = loadPricing()
   const sub = pricing.subtotal(items)
   const discount = pricing.applyPromo(sub, code)
   const message = discount > 0 ? `Promo applied: -${pricing.fmt(discount)}` : `Invalid promo code: ${code}`
@@ -152,6 +171,7 @@ app.post('/checkout/promo', (req, res) => {
 
 app.post('/checkout/place', (req, res) => {
   const s = session(req, res)
+  const pricing = loadPricing()
   const items = s.cart.map((i) => ({ ...catalog.find((c) => c.id === i.id), qty: i.qty }))
   const total = pricing.calcTotal(items, req.body.promo)
   orders.push({ id: 'o' + (orders.length + 1), total, email: String(req.body.email || '') })

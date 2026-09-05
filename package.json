@@ -13,7 +13,7 @@
     "probe": "node scripts/probe-heal.js",
     "mutate": "node scripts/mutate.js",
     "reset": "node scripts/mutate.js reset",
-    "test": "node --test engine/"
+    "test": "node --test engine/score.test.js"
   },
   "dependencies": {
     "@axe-core/playwright": "4.13.0",

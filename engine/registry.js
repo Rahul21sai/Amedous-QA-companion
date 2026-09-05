@@ -72,6 +72,25 @@ function applyRegistryPatch(key, primary, meta = {}) {
   return { key, from, to: entry.primary }
 }
 
+/**
+ * Restore canonical `primary` values from registry.seed.json, clearing heal history.
+ * Called by `--baseline` so every rehearsal starts from the same known-good state.
+ * The seed is never written by the healer.
+ */
+function restoreFromSeed() {
+  const SEED = path.join(__dirname, 'registry.seed.json')
+  const seed = JSON.parse(fs.readFileSync(SEED, 'utf8'))
+  const reg = load()
+  let n = 0
+  for (const [key, s] of Object.entries(seed)) {
+    if (key === '_doc') continue
+    reg[key] = { kind: s.kind, primary: { ...s.primary } }
+    n++
+  }
+  save(reg)
+  return n
+}
+
 /** Record the fingerprint observed on a green run — this is what healing scores against. */
 function recordFingerprints(fingerprints) {
   const reg = load()
@@ -82,4 +101,4 @@ function recordFingerprints(fingerprints) {
   return Object.keys(fingerprints).length
 }
 
-module.exports = { load, save, locatorFor, describe, applyRegistryPatch, recordFingerprints, HEALABLE, FILE }
+module.exports = { load, save, locatorFor, describe, applyRegistryPatch, recordFingerprints, restoreFromSeed, HEALABLE, FILE }
